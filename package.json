@@ -19,6 +19,7 @@
     "axios": "^1.8.4",
     "kudoboard-ui": "file:",
     "react": "^19.1.0",
+    "react-beautiful-dnd": "^13.1.1",
     "react-dom": "^19.1.0",
     "react-masonry-css": "^1.0.16",
     "react-router-dom": "^7.4.1",

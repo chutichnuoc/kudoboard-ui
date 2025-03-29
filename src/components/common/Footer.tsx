@@ -60,15 +60,6 @@ const Footer: React.FC = () => {
             </Typography>
             <Link
               component={RouterLink}
-              to="/how-it-works"
-              color="text.secondary"
-              display="block"
-              sx={{ mb: 1 }}
-            >
-              How It Works
-            </Link>
-            <Link
-              component={RouterLink}
               to="/examples"
               color="text.secondary"
               display="block"

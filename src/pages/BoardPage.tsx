@@ -52,17 +52,30 @@ const BoardPage: React.FC = () => {
           // Check if current user is the board owner
           setIsOwner(isAuthenticated && currentUser?.id === data.board.creatorID);
 
-          // Transform backend posts to frontend format
-          const mappedPosts: Post[] = data.posts.map((backendPost: any) => ({
-            id: backendPost.id.toString(),
-            boardId: backendPost.boardID.toString(),
-            author: backendPost.authorName,
-            message: backendPost.content,
-            backgroundColor: backendPost.backgroundColor || '#ffffff',
-            imageUrl: backendPost.media?.length > 0 ? backendPost.media[0].sourceURL : undefined,
-            createdAt: backendPost.createdAt,
-            updatedAt: backendPost.updatedAt
-          }));
+          const mappedPosts: Post[] = data.posts.map((backendPost: any) => {
+            // Extract authorId with fallbacks
+            let authorId = undefined;
+            if (backendPost.author_id) {
+              authorId = backendPost.author_id.toString();
+            } else if (backendPost.authorID) {
+              authorId = backendPost.authorID.toString();
+            } else if (backendPost.authorId) {
+              authorId = backendPost.authorId.toString();
+            }
+
+            return {
+              id: backendPost.id ? backendPost.id.toString() : '0',
+              boardId: (backendPost.board_id || backendPost.boardID || backendPost.boardId || '0').toString(),
+              author: backendPost.author_name || backendPost.authorName || 'Unknown',
+              authorId: authorId,
+              message: backendPost.content || '',
+              backgroundColor: backendPost.background_color || backendPost.backgroundColor || '#ffffff',
+              textColor: backendPost.text_color || backendPost.textColor || '#000000',
+              imageUrl: backendPost.media?.length > 0 ? backendPost.media[0].source_url || backendPost.media[0].sourceURL : undefined,
+              createdAt: backendPost.created_at || backendPost.createdAt || new Date().toISOString(),
+              updatedAt: backendPost.updated_at || backendPost.updatedAt || new Date().toISOString()
+            };
+          });
 
           setPosts(mappedPosts);
         } else {
@@ -79,6 +92,17 @@ const BoardPage: React.FC = () => {
     fetchBoardData();
   }, [boardId, isAuthenticated, currentUser]);
 
+  // Check if current user can modify a post
+  const canModifyPost = (post: Post) => {
+    if (!isAuthenticated || !currentUser) return false;
+
+    // Board owners can modify all posts
+    if (board && currentUser.id === board.creatorID) return true;
+
+    // Post authors can modify their own posts
+    return post.authorId === currentUser.id.toString();
+  };
+
   // Handler functions
   const handleOpenCreatePost = () => {
     setEditingPost(undefined);
@@ -92,9 +116,22 @@ const BoardPage: React.FC = () => {
     setCreatePostOpen(true);
   };
 
-  const handleDeletePost = (post: Post) => {
+  const handleDeletePost = async (post: Post) => {
     if (window.confirm(`Are you sure you want to delete this message from ${post.author}?`)) {
-      deletePost(post.id);
+      try {
+        setIsLoading(true);
+        await postApi.deletePost(post.id);
+
+        // Update local state by removing the deleted post
+        setPosts(posts.filter(p => p.id !== post.id));
+
+        // Optional: Show success message with a toast notification
+      } catch (err) {
+        console.error('Error deleting post:', err);
+        alert('Failed to delete the message. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -114,10 +151,13 @@ const BoardPage: React.FC = () => {
     try {
       if (editingPost) {
         // Update existing post
-        const { author, message, imageUrl, backgroundColor } = postData;
-        const updateData: UpdatePostRequest = { author, message, imageUrl, backgroundColor };
+        const updateData: UpdatePostRequest = {
+          message: postData.message,
+          background_color: postData.background_color,
+          text_color: postData.text_color
+        };
 
-        const updatedPost = await postApi.updatePost(actualBoardId, editingPost.id, updateData);
+        const updatedPost = await postApi.updatePost(editingPost.id, updateData);
 
         // Update posts state
         setPosts(posts.map(post => post.id === updatedPost.id ? updatedPost : post));
@@ -152,15 +192,31 @@ const BoardPage: React.FC = () => {
     }
   };
 
-  const deletePost = async (postId: string) => {
-    try {
-      await postApi.deletePost(boardId!, postId);
+  const handleReorderPosts = async (postOrders: { id: string, positionOrder: number }[]) => {
+    if (!board) return;
 
-      // Update state
-      setPosts(posts.filter(post => post.id !== postId));
+    try {
+      // Check if reorderPosts is available in the API
+      if (typeof postApi.reorderPosts !== 'function') {
+        console.error('reorderPosts function is not available in postApi');
+        alert('Post reordering is not available at this time');
+        return;
+      }
+
+      await postApi.reorderPosts(board.id, postOrders);
+
+      // Update the local state with new order
+      const reorderedPosts = [...posts];
+      reorderedPosts.sort((a, b) => {
+        const aIndex = postOrders.findIndex(order => order.id === a.id);
+        const bIndex = postOrders.findIndex(order => order.id === b.id);
+        return aIndex - bIndex;
+      });
+
+      setPosts(reorderedPosts);
     } catch (err) {
-      console.error('Error deleting post:', err);
-      alert('Failed to delete the message. Please try again.');
+      console.error('Error reordering posts:', err);
+      alert('Failed to reorder posts. Please try again.');
     }
   };
 

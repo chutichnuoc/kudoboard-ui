@@ -60,7 +60,7 @@ const KudoPost: React.FC<KudoPostProps> = ({ post, onEdit, onDelete, isOwner }) 
       sx={{
         width: '100%',
         height: '100%',
-        bgcolor: post.backgroundColor || '#ffffff',
+        bgcolor: post.background_color || '#ffffff',
         borderRadius: 2,
         overflow: 'visible',
         position: 'relative',

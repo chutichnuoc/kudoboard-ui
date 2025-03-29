@@ -13,6 +13,7 @@ interface BoardGridProps {
   onAddPost: () => void;
   onEditPost: (post: Post) => void;
   onDeletePost: (post: Post) => void;
+  onReorderPosts?: (postOrders: {id: string, positionOrder: number}[]) => void;
 }
 
 const BoardGrid: React.FC<BoardGridProps> = ({

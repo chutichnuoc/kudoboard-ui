@@ -26,7 +26,6 @@ interface CreatePostFormProps {
   error: string | null;
 }
 
-
 const CreatePostForm: React.FC<CreatePostFormProps> = ({
   open,
   onClose,
@@ -44,7 +43,7 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({
     author: '',
     message: '',
     imageUrl: '',
-    backgroundColor: '#ffffff',
+    background_color: '#ffffff',
   });
 
   // Load data from editPost if provided
@@ -55,7 +54,7 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({
         author: editPost.author,
         message: editPost.message,
         imageUrl: editPost.imageUrl || '',
-        backgroundColor: editPost.backgroundColor || '#ffffff',
+        background_color: editPost.background_color || '#ffffff',
       });
     } else {
       // Reset form when not editing
@@ -64,7 +63,7 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({
         author: '',
         message: '',
         imageUrl: '',
-        backgroundColor: '#ffffff',
+        background_color: '#ffffff',
       });
     }
   }, [editPost, boardId]);
@@ -189,7 +188,7 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({
                   height: 36,
                   bgcolor: color,
                   border: '2px solid',
-                  borderColor: formData.backgroundColor === color ? 'primary.main' : 'divider',
+                  borderColor: formData.background_color === color ? 'primary.main' : 'divider',
                   borderRadius: '50%',
                   cursor: 'pointer',
                   '&:hover': {

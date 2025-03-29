@@ -34,7 +34,6 @@ const navItems: NavItem[] = [
   { title: 'How It Works', path: '/how-it-works' },
   { title: 'Examples', path: '/examples' },
   { title: 'Pricing', path: '/pricing' },
-  { title: 'Login', path: '/login', guestOnly: true },
   { title: 'My Boards', path: '/my-boards', authRequired: true },
 ];
 
@@ -52,6 +51,10 @@ const Header: React.FC = () => {
 
   const handleCreateBoard = () => {
     navigate('/create-board');
+  };
+
+  const handleLogin = () => {
+    navigate('/login');
   };
 
   const handleLogout = () => {
@@ -88,31 +91,40 @@ const Header: React.FC = () => {
             </ListItemButton>
           </ListItem>
         ))}
-        {isAuthenticated && (
-          <ListItem disablePadding>
+        <ListItem disablePadding>
+          {isAuthenticated ? (
             <ListItemButton
               sx={{ textAlign: 'center' }}
               onClick={handleLogout}
             >
               <ListItemText primary="Logout" />
             </ListItemButton>
+          ) : (
+            <ListItemButton
+              sx={{ textAlign: 'center' }}
+              onClick={handleLogin}
+            >
+              <ListItemText primary="Login" />
+            </ListItemButton>
+          )}
+        </ListItem>
+        {isAuthenticated && (
+          <ListItem disablePadding>
+            <ListItemButton
+              sx={{
+                textAlign: 'center',
+                bgcolor: 'primary.main',
+                color: 'white',
+                '&:hover': { bgcolor: 'primary.dark' },
+                borderRadius: 2,
+                m: 1,
+              }}
+              onClick={handleCreateBoard}
+            >
+              <ListItemText primary="Create a Board" />
+            </ListItemButton>
           </ListItem>
         )}
-        <ListItem disablePadding>
-          <ListItemButton
-            sx={{
-              textAlign: 'center',
-              bgcolor: 'primary.main',
-              color: 'white',
-              '&:hover': { bgcolor: 'primary.dark' },
-              borderRadius: 2,
-              m: 1,
-            }}
-            onClick={handleCreateBoard}
-          >
-            <ListItemText primary="Create a Board" />
-          </ListItemButton>
-        </ListItem>
       </List>
     </Box>
   );
@@ -195,35 +207,33 @@ const Header: React.FC = () => {
             ))}
 
             {isAuthenticated && (
-              <>
-                <Box sx={{ display: 'flex', alignItems: 'center', mx: 1.5 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Hi, {currentUser?.name || 'User'}
-                  </Typography>
-                </Box>
-                <Link
-                  component="button"
-                  onClick={handleLogout}
-                  sx={{
-                    mx: 1.5,
-                    color: 'text.primary',
-                    textDecoration: 'none',
-                    '&:hover': { color: 'primary.main' },
-                  }}
-                >
-                  Logout
-                </Link>
-              </>
+              <Box sx={{ display: 'flex', alignItems: 'center', mx: 1.5 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Hi, {currentUser?.name || 'User'}
+                </Typography>
+              </Box>
             )}
 
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleCreateBoard}
-              sx={{ ml: 2 }}
-            >
-              Create a Board
-            </Button>
+            {/* Change from Create Board to Login/Logout button */}
+            {isAuthenticated ? (
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleLogout}
+                sx={{ ml: 2 }}
+              >
+                Logout
+              </Button>
+            ) : (
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleLogin}
+                sx={{ ml: 2 }}
+              >
+                Login
+              </Button>
+            )}
           </Box>
         </Toolbar>
       </Container>
