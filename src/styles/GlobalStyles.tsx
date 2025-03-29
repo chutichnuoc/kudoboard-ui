@@ -39,7 +39,7 @@ const GlobalStyles: React.FC = () => {
           paddingLeft: 16,
           backgroundClip: 'padding-box',
         },
-        '.kudo-card': {
+        '.kudo-post': {
           transition: 'transform 0.3s ease',
           '&:hover': {
             transform: 'translateY(-5px)',

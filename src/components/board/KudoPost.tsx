@@ -13,16 +13,16 @@ import {
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
-import { Card as CardType } from '../../types/cardTypes';
+import { Post } from '../../types/postTypes';
 
-interface KudoCardProps {
-  card: CardType;
-  onEdit?: (card: CardType) => void;
-  onDelete?: (card: CardType) => void;
+interface KudoPostProps {
+  post: Post;
+  onEdit?: (post: Post) => void;
+  onDelete?: (post: Post) => void;
   isOwner: boolean;
 }
 
-const KudoCard: React.FC<KudoCardProps> = ({ card, onEdit, onDelete, isOwner }) => {
+const KudoPost: React.FC<KudoPostProps> = ({ post, onEdit, onDelete, isOwner }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
@@ -35,12 +35,12 @@ const KudoCard: React.FC<KudoCardProps> = ({ card, onEdit, onDelete, isOwner }) 
   };
 
   const handleEdit = () => {
-    if (onEdit) onEdit(card);
+    if (onEdit) onEdit(post);
     handleClose();
   };
 
   const handleDelete = () => {
-    if (onDelete) onDelete(card);
+    if (onDelete) onDelete(post);
     handleClose();
   };
 
@@ -56,11 +56,11 @@ const KudoCard: React.FC<KudoCardProps> = ({ card, onEdit, onDelete, isOwner }) 
 
   return (
     <Card
-      className="kudo-card"
+      className="kudo-post"
       sx={{
         width: '100%',
         height: '100%',
-        bgcolor: card.backgroundColor || '#ffffff',
+        bgcolor: post.backgroundColor || '#ffffff',
         borderRadius: 2,
         overflow: 'visible',
         position: 'relative',
@@ -70,7 +70,7 @@ const KudoCard: React.FC<KudoCardProps> = ({ card, onEdit, onDelete, isOwner }) 
       {isOwner && (
         <Box sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}>
           <IconButton
-            aria-label="card-options"
+            aria-label="post-options"
             size="small"
             onClick={handleClick}
             sx={{ 
@@ -81,7 +81,7 @@ const KudoCard: React.FC<KudoCardProps> = ({ card, onEdit, onDelete, isOwner }) 
             <MoreVertIcon fontSize="small" />
           </IconButton>
           <Menu
-            id="card-menu"
+            id="post-menu"
             anchorEl={anchorEl}
             open={open}
             onClose={handleClose}
@@ -101,11 +101,11 @@ const KudoCard: React.FC<KudoCardProps> = ({ card, onEdit, onDelete, isOwner }) 
       )}
 
       <CardContent>
-        {card.imageUrl && (
+        {post.imageUrl && (
           <CardMedia
             component="img"
-            image={card.imageUrl}
-            alt="Card image"
+            image={post.imageUrl}
+            alt="Post image"
             sx={{
               borderRadius: 1,
               mb: 2,
@@ -125,19 +125,19 @@ const KudoCard: React.FC<KudoCardProps> = ({ card, onEdit, onDelete, isOwner }) 
             wordBreak: 'break-word',
           }}
         >
-          {card.message}
+          {post.message}
         </Typography>
 
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main', mr: 1.5 }}>
-            {getInitials(card.author)}
+            {getInitials(post.author)}
           </Avatar>
           <Box>
             <Typography variant="subtitle2" component="div">
-              {card.author}
+              {post.author}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {new Date(card.createdAt).toLocaleDateString()}
+              {new Date(post.createdAt).toLocaleDateString()}
             </Typography>
           </Box>
         </Box>
@@ -146,4 +146,4 @@ const KudoCard: React.FC<KudoCardProps> = ({ card, onEdit, onDelete, isOwner }) 
   );
 };
 
-export default KudoCard;
+export default KudoPost;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -11,40 +11,65 @@ import {
   Typography,
   CircularProgress,
   Alert,
-  Stack,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ImageIcon from '@mui/icons-material/Image';
-import { CreateCardRequest, Card } from '../../types/cardTypes';
+import { CreatePostRequest, Post } from '../../types/postTypes';
 
-interface CreateCardFormProps {
+interface CreatePostFormProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (cardData: CreateCardRequest) => Promise<void>;
+  onSubmit: (postData: CreatePostRequest) => Promise<void>;
   boardId: string;
-  editCard?: Card; // If provided, form will be in edit mode
+  editPost?: Post; // If provided, form will be in edit mode
   isSubmitting: boolean;
   error: string | null;
 }
 
-const CreateCardForm: React.FC<CreateCardFormProps> = ({
+
+const CreatePostForm: React.FC<CreatePostFormProps> = ({
   open,
   onClose,
   onSubmit,
   boardId,
-  editCard,
+  editPost,
   isSubmitting,
   error,
 }) => {
-  const [formData, setFormData] = useState<CreateCardRequest>({
+  // Ensure boardId is being used correctly
+  console.log('CreatePostForm received boardId:', boardId);
+  
+  const [formData, setFormData] = useState<CreatePostRequest>({
     boardId: boardId,
-    author: editCard?.author || '',
-    message: editCard?.message || '',
-    imageUrl: editCard?.imageUrl || '',
-    backgroundColor: editCard?.backgroundColor || '#ffffff',
+    author: '',
+    message: '',
+    imageUrl: '',
+    backgroundColor: '#ffffff',
   });
 
-  // Color options for card background
+  // Load data from editPost if provided
+  useEffect(() => {
+    if (editPost) {
+      setFormData({
+        boardId: boardId, // This should be the numeric ID, not the slug
+        author: editPost.author,
+        message: editPost.message,
+        imageUrl: editPost.imageUrl || '',
+        backgroundColor: editPost.backgroundColor || '#ffffff',
+      });
+    } else {
+      // Reset form when not editing
+      setFormData({
+        boardId: boardId, // This should be the numeric ID, not the slug
+        author: '',
+        message: '',
+        imageUrl: '',
+        backgroundColor: '#ffffff',
+      });
+    }
+  }, [editPost, boardId]);
+
+  // Color options for post background
   const colorOptions = [
     '#ffffff', // white
     '#f8f9fa', // light gray
@@ -82,10 +107,10 @@ const CreateCardForm: React.FC<CreateCardFormProps> = ({
       onClose={onClose}
       maxWidth="sm"
       fullWidth
-      aria-labelledby="create-card-dialog-title"
+      aria-labelledby="create-post-dialog-title"
     >
-      <DialogTitle id="create-card-dialog-title">
-        {editCard ? 'Edit Message' : 'Add a Message'}
+      <DialogTitle id="create-post-dialog-title">
+        {editPost ? 'Edit Message' : 'Add a Message'}
         <IconButton
           aria-label="close"
           onClick={onClose}
@@ -152,7 +177,7 @@ const CreateCardForm: React.FC<CreateCardFormProps> = ({
           />
 
           <Typography variant="subtitle2" gutterBottom>
-            Card Color:
+            Post Color:
           </Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
             {colorOptions.map(color => (
@@ -209,7 +234,7 @@ const CreateCardForm: React.FC<CreateCardFormProps> = ({
             disabled={!isValid || isSubmitting}
             startIcon={isSubmitting ? <CircularProgress size={24} /> : null}
           >
-            {editCard ? 'Update' : 'Add'} Message
+            {editPost ? 'Update' : 'Add'} Message
           </Button>
         </DialogActions>
       </form>
@@ -217,4 +242,4 @@ const CreateCardForm: React.FC<CreateCardFormProps> = ({
   );
 };
 
-export default CreateCardForm;
+export default CreatePostForm;

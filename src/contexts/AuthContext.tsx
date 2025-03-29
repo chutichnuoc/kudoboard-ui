@@ -10,6 +10,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name?: string) => Promise<void>;
   logout: () => void;
+  updateProfile: (data: { name?: string; profilePicture?: string }) => Promise<void>;
 }
 
 // Create the context
@@ -90,6 +91,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Update profile function
+  const updateProfile = async (data: { name?: string; profilePicture?: string }) => {
+    setIsLoading(true);
+    try {
+      const updatedUser = await authApi.updateProfile(data);
+      setCurrentUser(prev => prev ? { ...prev, ...updatedUser } : updatedUser);
+    } catch (error) {
+      console.error('Profile update error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Logout function
   const logout = () => {
     localStorage.removeItem('token');
@@ -105,6 +120,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     register,
     logout,
+    updateProfile
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

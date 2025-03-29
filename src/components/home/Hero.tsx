@@ -32,7 +32,7 @@ const Hero: React.FC = () => {
                 lineHeight: 1.2,
               }}
             >
-              Group cards that make an impact
+              Group posts that make an impact
             </Typography>
             <Typography
               variant="h5"

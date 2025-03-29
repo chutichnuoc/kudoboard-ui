@@ -2,27 +2,27 @@ import React from 'react';
 import { Box, Container, Typography, Button, Alert } from '@mui/material';
 import Masonry from 'react-masonry-css';
 import AddIcon from '@mui/icons-material/Add';
-import KudoCard from './KudoCard';
-import { Card } from '../../types/cardTypes';
+import KudoPost from './KudoPost';
+import { Post } from '../../types/postTypes';
 
 interface BoardGridProps {
-  cards: Card[];
+  posts: Post[];
   isLoading: boolean;
   error: string | null;
   isOwner: boolean;
-  onAddCard: () => void;
-  onEditCard: (card: Card) => void;
-  onDeleteCard: (card: Card) => void;
+  onAddPost: () => void;
+  onEditPost: (post: Post) => void;
+  onDeletePost: (post: Post) => void;
 }
 
 const BoardGrid: React.FC<BoardGridProps> = ({
-  cards,
+  posts,
   isLoading,
   error,
   isOwner,
-  onAddCard,
-  onEditCard,
-  onDeleteCard,
+  onAddPost,
+  onEditPost,
+  onDeletePost,
 }) => {
   // Breakpoints for the masonry grid
   const breakpoints = {
@@ -36,7 +36,7 @@ const BoardGrid: React.FC<BoardGridProps> = ({
     return (
       <Box sx={{ py: 4 }}>
         <Container maxWidth="lg">
-          <Typography>Loading cards...</Typography>
+          <Typography>Loading messages...</Typography>
         </Container>
       </Box>
     );
@@ -64,19 +64,19 @@ const BoardGrid: React.FC<BoardGridProps> = ({
           }}
         >
           <Typography variant="h5" component="h2">
-            {cards.length} {cards.length === 1 ? 'Message' : 'Messages'}
+            {posts.length} {posts.length === 1 ? 'Message' : 'Messages'}
           </Typography>
           <Button
             variant="contained"
             color="primary"
             startIcon={<AddIcon />}
-            onClick={onAddCard}
+            onClick={onAddPost}
           >
             Add a Message
           </Button>
         </Box>
 
-        {cards.length === 0 ? (
+        {posts.length === 0 ? (
           <Box
             sx={{
               py: 8,
@@ -97,7 +97,7 @@ const BoardGrid: React.FC<BoardGridProps> = ({
               variant="contained"
               color="primary"
               startIcon={<AddIcon />}
-              onClick={onAddCard}
+              onClick={onAddPost}
             >
               Add a Message
             </Button>
@@ -108,13 +108,13 @@ const BoardGrid: React.FC<BoardGridProps> = ({
             className="masonry-grid"
             columnClassName="masonry-grid-column"
           >
-            {cards.map((card) => (
-              <KudoCard
-                key={card.id}
-                card={card}
+            {posts.map((post) => (
+              <KudoPost
+                key={post.id}
+                post={post}
                 isOwner={isOwner}
-                onEdit={onEditCard}
-                onDelete={onDeleteCard}
+                onEdit={onEditPost}
+                onDelete={onDeletePost}
               />
             ))}
           </Masonry>

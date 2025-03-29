@@ -35,7 +35,7 @@ const Footer: React.FC = () => {
               Kudoboard
             </Typography>
             <Typography variant="body2" color="text.secondary" paragraph>
-              Group greeting cards for any occasion. Perfect for celebrating birthdays, 
+              Group greeting posts for any occasion. Perfect for celebrating birthdays, 
               farewells, and recognizing team members in today's remote work environment.
             </Typography>
             <Box sx={{ mt: 2 }}>

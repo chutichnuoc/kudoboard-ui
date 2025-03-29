@@ -85,10 +85,10 @@ const CreateBoardPage: React.FC = () => {
       const newBoard = await boardApi.createBoard(formData);
       
       // Redirect to the new board
-      navigate(`/boards/${newBoard.id}`);
-    } catch (err) {
+      navigate(`/boards/${newBoard.slug}`);
+    } catch (err: any) {
       console.error('Error creating board:', err);
-      setError('Failed to create your board. Please try again.');
+      setError(err?.message || 'Failed to create your board. Please try again.');
       setIsLoading(false);
     }
   };

@@ -4,54 +4,70 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Container, Typography, Dialog, DialogTitle, DialogContent, DialogActions, Button, CircularProgress, Alert } from '@mui/material';
 import BoardHeader from '../components/board/BoardHeader';
 import BoardGrid from '../components/board/BoardGrid';
-import CreateCardForm from '../components/board/CreateCardForm';
+import CreatePostForm from '../components/board/CreatePostForm';
 import ShareBoardDialog from '../components/board/ShareBoardDialog';
 import { boardApi } from '../api/boardApi';
-import { cardApi } from '../api/cardApi';
+import { postApi } from '../api/postApi';
+import { useAuth } from '../contexts/AuthContext';
 import { Board } from '../types/boardTypes';
-import { Card, CreateCardRequest, UpdateCardRequest } from '../types/cardTypes';
+import { Post, CreatePostRequest, UpdatePostRequest } from '../types/postTypes';
 
 const BoardPage: React.FC = () => {
   const { boardId } = useParams<{ boardId: string }>();
   const navigate = useNavigate();
-  
+  const { currentUser, isAuthenticated } = useAuth();
+
   // State variables
   const [board, setBoard] = useState<Board | null>(null);
-  const [cards, setCards] = useState<Card[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isOwner, setIsOwner] = useState(false); // In a real app, this would be determined by auth
-  
+  const [isOwner, setIsOwner] = useState(false);
+
   // Dialog state
-  const [createCardOpen, setCreateCardOpen] = useState(false);
+  const [createPostOpen, setCreatePostOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [editingCard, setEditingCard] = useState<Card | undefined>(undefined);
+  const [editingPost, setEditingPost] = useState<Post | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
 
-  // Fetch board and cards
+  // Fetch board and posts
   useEffect(() => {
     const fetchBoardData = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        
+
         if (!boardId) {
           throw new Error('Board ID is required');
         }
-        
-        // Fetch board details
-        const boardData = await boardApi.getBoard(boardId);
-        setBoard(boardData);
-        
-        // For demo purposes, we'll assume the user is the owner
-        // In a real app, you would check if the current user's ID matches the board's ownerId
-        setIsOwner(true);
-        
-        // Fetch cards for the board
-        const cardsData = await cardApi.getBoardCards(boardId);
-        setCards(cardsData);
+
+        // Fetch board details using the slug endpoint
+        const data = await boardApi.getBoardBySlug(boardId);
+
+        if (data && data.board) {
+          setBoard(data.board);
+
+          // Check if current user is the board owner
+          setIsOwner(isAuthenticated && currentUser?.id === data.board.creatorID);
+
+          // Transform backend posts to frontend format
+          const mappedPosts: Post[] = data.posts.map((backendPost: any) => ({
+            id: backendPost.id.toString(),
+            boardId: backendPost.boardID.toString(),
+            author: backendPost.authorName,
+            message: backendPost.content,
+            backgroundColor: backendPost.backgroundColor || '#ffffff',
+            imageUrl: backendPost.media?.length > 0 ? backendPost.media[0].sourceURL : undefined,
+            createdAt: backendPost.createdAt,
+            updatedAt: backendPost.updatedAt
+          }));
+
+          setPosts(mappedPosts);
+        } else {
+          throw new Error('Board not found');
+        }
       } catch (err) {
         console.error('Error fetching board data:', err);
         setError('Failed to load the board. Please try again later.');
@@ -59,69 +75,91 @@ const BoardPage: React.FC = () => {
         setIsLoading(false);
       }
     };
-    
+
     fetchBoardData();
-  }, [boardId]);
+  }, [boardId, isAuthenticated, currentUser]);
 
   // Handler functions
-  const handleOpenCreateCard = () => {
-    setEditingCard(undefined);
+  const handleOpenCreatePost = () => {
+    setEditingPost(undefined);
     setSubmissionError(null);
-    setCreateCardOpen(true);
+    setCreatePostOpen(true);
   };
 
-  const handleEditCard = (card: Card) => {
-    setEditingCard(card);
+  const handleEditPost = (post: Post) => {
+    setEditingPost(post);
     setSubmissionError(null);
-    setCreateCardOpen(true);
+    setCreatePostOpen(true);
   };
 
-  const handleDeleteCard = (card: Card) => {
-    if (window.confirm(`Are you sure you want to delete this message from ${card.author}?`)) {
-      deleteCard(card.id);
+  const handleDeletePost = (post: Post) => {
+    if (window.confirm(`Are you sure you want to delete this message from ${post.author}?`)) {
+      deletePost(post.id);
     }
   };
 
-  const handleSubmitCard = async (cardData: CreateCardRequest) => {
+  const handleSubmitPost = async (postData: CreatePostRequest) => {
     setIsSubmitting(true);
     setSubmissionError(null);
-    
+
+    // Make sure we're using the numeric board ID, not the slug
+    const actualBoardId = board?.id ? board.id.toString() : '';
+
+    if (!actualBoardId) {
+      setSubmissionError('Missing board ID. Please try again.');
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
-      if (editingCard) {
-        // Update existing card
-        const { author, message, imageUrl, backgroundColor } = cardData;
-        const updateData: UpdateCardRequest = { author, message, imageUrl, backgroundColor };
-        
-        const updatedCard = await cardApi.updateCard(boardId!, editingCard.id, updateData);
-        
-        // Update cards state
-        setCards(cards.map(card => card.id === updatedCard.id ? updatedCard : card));
+      if (editingPost) {
+        // Update existing post
+        const { author, message, imageUrl, backgroundColor } = postData;
+        const updateData: UpdatePostRequest = { author, message, imageUrl, backgroundColor };
+
+        const updatedPost = await postApi.updatePost(actualBoardId, editingPost.id, updateData);
+
+        // Update posts state
+        setPosts(posts.map(post => post.id === updatedPost.id ? updatedPost : post));
       } else {
-        // Create new card
-        const newCard = await cardApi.createCard(cardData);
-        
-        // Add new card to state
-        setCards([...cards, newCard]);
+        // Create new post
+        // Make sure to use the actual board ID from the board object, not the URL parameter
+        const createPostRequest = {
+          ...postData,
+          boardId: actualBoardId // Override with actual board ID
+        };
+
+        let newPost;
+
+        // Use the appropriate endpoint based on authentication
+        if (isAuthenticated) {
+          newPost = await postApi.createPost(createPostRequest);
+        } else {
+          newPost = await postApi.createAnonymousPost(createPostRequest);
+        }
+
+        // Add new post to state
+        setPosts([...posts, newPost]);
       }
-      
+
       // Close the dialog
-      setCreateCardOpen(false);
+      setCreatePostOpen(false);
     } catch (err) {
-      console.error('Error submitting card:', err);
+      console.error('Error submitting post:', err);
       setSubmissionError('Failed to save your message. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const deleteCard = async (cardId: string) => {
+  const deletePost = async (postId: string) => {
     try {
-      await cardApi.deleteCard(boardId!, cardId);
-      
+      await postApi.deletePost(boardId!, postId);
+
       // Update state
-      setCards(cards.filter(card => card.id !== cardId));
+      setPosts(posts.filter(post => post.id !== postId));
     } catch (err) {
-      console.error('Error deleting card:', err);
+      console.error('Error deleting post:', err);
       alert('Failed to delete the message. Please try again.');
     }
   };
@@ -137,12 +175,12 @@ const BoardPage: React.FC = () => {
 
   const handleToggleBoardPrivacy = async () => {
     if (!board) return;
-    
+
     try {
       const updatedBoard = await boardApi.updateBoard(board.id, {
-        isPublic: !board.isPublic
+        isPublic: !board.isPrivate
       });
-      
+
       setBoard(updatedBoard);
     } catch (err) {
       console.error('Error updating board privacy:', err);
@@ -217,24 +255,24 @@ const BoardPage: React.FC = () => {
         onTogglePrivacy={handleToggleBoardPrivacy}
       />
 
-      {/* Board Grid with Cards */}
+      {/* Board Grid with Posts */}
       <BoardGrid
-        cards={cards}
+        posts={posts}
         isLoading={isLoading}
         error={error}
         isOwner={isOwner}
-        onAddCard={handleOpenCreateCard}
-        onEditCard={handleEditCard}
-        onDeleteCard={handleDeleteCard}
+        onAddPost={handleOpenCreatePost}
+        onEditPost={handleEditPost}
+        onDeletePost={handleDeletePost}
       />
 
-      {/* Create/Edit Card Dialog */}
-      <CreateCardForm
-        open={createCardOpen}
-        onClose={() => setCreateCardOpen(false)}
-        onSubmit={handleSubmitCard}
-        boardId={boardId!}
-        editCard={editingCard}
+      {/* Create/Edit Post Dialog */}
+      <CreatePostForm
+        open={createPostOpen}
+        onClose={() => setCreatePostOpen(false)}
+        onSubmit={handleSubmitPost}
+        boardId={board?.id?.toString() || ''}
+        editPost={editingPost}
         isSubmitting={isSubmitting}
         error={submissionError}
       />

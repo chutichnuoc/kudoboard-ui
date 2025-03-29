@@ -1,7 +1,11 @@
 export interface User {
-  id: string;
+  id: number;
+  name: string;
   email: string;
-  name?: string;
+  profilePicture?: string;
+  isVerified: boolean;
+  authProvider: string;
+  createdAt: string;
 }
 
 export interface AuthResponse {
@@ -18,9 +22,4 @@ export interface RegisterRequest {
   email: string;
   password: string;
   name?: string;
-}
-
-export interface AuthResponse {
-  token: string;
-  user: User;
 }
