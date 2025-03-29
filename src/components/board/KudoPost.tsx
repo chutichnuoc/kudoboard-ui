@@ -1,3 +1,4 @@
+// src/components/board/KudoPost.tsx
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -8,7 +9,8 @@ import {
   Menu, 
   MenuItem, 
   Avatar,
-  CardMedia
+  CardMedia,
+  Divider
 } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -56,71 +58,39 @@ const KudoPost: React.FC<KudoPostProps> = ({ post, onEdit, onDelete, isOwner }) 
 
   return (
     <Card
-      className="kudo-post"
       sx={{
         width: '100%',
         height: '100%',
-        bgcolor: post.background_color || '#ffffff',
+        backgroundColor: post.background_color || '#ffffff',
         borderRadius: 2,
-        overflow: 'visible',
-        position: 'relative',
-        mb: 3,
+        boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+        overflow: 'hidden',
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+        '&:hover': {
+          transform: 'translateY(-5px)',
+          boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
+        },
       }}
     >
-      {isOwner && (
-        <Box sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}>
-          <IconButton
-            aria-label="post-options"
-            size="small"
-            onClick={handleClick}
-            sx={{ 
-              bgcolor: 'rgba(255, 255, 255, 0.8)',
-              '&:hover': { bgcolor: 'rgba(255, 255, 255, 1)' }
-            }}
-          >
-            <MoreVertIcon fontSize="small" />
-          </IconButton>
-          <Menu
-            id="post-menu"
-            anchorEl={anchorEl}
-            open={open}
-            onClose={handleClose}
-            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-          >
-            <MenuItem onClick={handleEdit}>
-              <EditIcon fontSize="small" sx={{ mr: 1 }} />
-              Edit
-            </MenuItem>
-            <MenuItem onClick={handleDelete}>
-              <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
-              Delete
-            </MenuItem>
-          </Menu>
-        </Box>
+      {post.imageUrl && (
+        <CardMedia
+          component="img"
+          image={post.imageUrl}
+          alt="Post image"
+          sx={{
+            maxHeight: 180,
+            objectFit: 'cover',
+          }}
+        />
       )}
 
-      <CardContent>
-        {post.imageUrl && (
-          <CardMedia
-            component="img"
-            image={post.imageUrl}
-            alt="Post image"
-            sx={{
-              borderRadius: 1,
-              mb: 2,
-              maxHeight: 200,
-              objectFit: 'cover',
-            }}
-          />
-        )}
-
+      <CardContent sx={{ p: 3 }}>
         <Typography
           variant="body1"
-          component="div"
           sx={{
             mb: 3,
-            fontStyle: 'italic',
+            lineHeight: 1.6,
+            color: post.text_color || '#000000',
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-word',
           }}
@@ -128,18 +98,63 @@ const KudoPost: React.FC<KudoPostProps> = ({ post, onEdit, onDelete, isOwner }) 
           {post.message}
         </Typography>
 
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main', mr: 1.5 }}>
-            {getInitials(post.author)}
-          </Avatar>
-          <Box>
-            <Typography variant="subtitle2" component="div">
-              {post.author}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {new Date(post.createdAt).toLocaleDateString()}
-            </Typography>
+        <Divider sx={{ mb: 2 }} />
+
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Avatar 
+              sx={{ 
+                width: 36, 
+                height: 36, 
+                bgcolor: 'primary.main', 
+                mr: 1.5,
+                fontSize: '0.875rem', 
+                fontWeight: 'bold' 
+              }}
+            >
+              {getInitials(post.author)}
+            </Avatar>
+            <Box>
+              <Typography variant="subtitle2" fontWeight="medium">
+                {post.author}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {new Date(post.createdAt).toLocaleDateString()}
+              </Typography>
+            </Box>
           </Box>
+
+          {isOwner && (
+            <Box>
+              <IconButton
+                aria-label="post-options"
+                size="small"
+                onClick={handleClick}
+                sx={{ 
+                  color: 'text.secondary',
+                }}
+              >
+                <MoreVertIcon fontSize="small" />
+              </IconButton>
+              <Menu
+                id="post-menu"
+                anchorEl={anchorEl}
+                open={open}
+                onClose={handleClose}
+                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+              >
+                <MenuItem onClick={handleEdit}>
+                  <EditIcon fontSize="small" sx={{ mr: 1 }} />
+                  Edit
+                </MenuItem>
+                <MenuItem onClick={handleDelete}>
+                  <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
+                  Delete
+                </MenuItem>
+              </Menu>
+            </Box>
+          )}
         </Box>
       </CardContent>
     </Card>

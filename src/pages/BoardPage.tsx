@@ -1,16 +1,30 @@
 // src/pages/BoardPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Box, Container, Typography, Dialog, DialogTitle, DialogContent, DialogActions, Button, CircularProgress, Alert } from '@mui/material';
-import BoardHeader from '../components/board/BoardHeader';
-import BoardGrid from '../components/board/BoardGrid';
+import { 
+  Box, 
+  Container, 
+  Typography, 
+  Button, 
+  Dialog, 
+  DialogTitle, 
+  DialogContent, 
+  DialogActions,
+  CircularProgress, 
+  Alert,
+  Paper,
+  Divider,
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import ShareIcon from '@mui/icons-material/Share';
+import KudoPost from '../components/board/KudoPost';
 import CreatePostForm from '../components/board/CreatePostForm';
 import ShareBoardDialog from '../components/board/ShareBoardDialog';
 import { boardApi } from '../api/boardApi';
 import { postApi } from '../api/postApi';
 import { useAuth } from '../contexts/AuthContext';
 import { Board } from '../types/boardTypes';
-import { Post, CreatePostRequest, UpdatePostRequest } from '../types/postTypes';
+import { Post, CreatePostRequest } from '../types/postTypes';
 
 const BoardPage: React.FC = () => {
   const { boardId } = useParams<{ boardId: string }>();
@@ -52,6 +66,7 @@ const BoardPage: React.FC = () => {
           // Check if current user is the board owner
           setIsOwner(isAuthenticated && currentUser?.id === data.board.creatorID);
 
+          // Transform backend posts to frontend format
           const mappedPosts: Post[] = data.posts.map((backendPost: any) => {
             // Extract authorId with fallbacks
             let authorId = undefined;
@@ -95,11 +110,13 @@ const BoardPage: React.FC = () => {
   // Check if current user can modify a post
   const canModifyPost = (post: Post) => {
     if (!isAuthenticated || !currentUser) return false;
-
+    
     // Board owners can modify all posts
     if (board && currentUser.id === board.creatorID) return true;
-
+    
     // Post authors can modify their own posts
+    if (!post.authorId) return false;
+    
     return post.authorId === currentUser.id.toString();
   };
 
@@ -121,11 +138,9 @@ const BoardPage: React.FC = () => {
       try {
         setIsLoading(true);
         await postApi.deletePost(post.id);
-
+        
         // Update local state by removing the deleted post
         setPosts(posts.filter(p => p.id !== post.id));
-
-        // Optional: Show success message with a toast notification
       } catch (err) {
         console.error('Error deleting post:', err);
         alert('Failed to delete the message. Please try again.');
@@ -151,27 +166,24 @@ const BoardPage: React.FC = () => {
     try {
       if (editingPost) {
         // Update existing post
-        const updateData: UpdatePostRequest = {
-          message: postData.message,
-          background_color: postData.background_color,
-          text_color: postData.text_color
-        };
-
-        const updatedPost = await postApi.updatePost(editingPost.id, updateData);
-
+        const updatedPost = await postApi.updatePost(
+          editingPost.id, 
+          {
+            message: postData.message,
+            background_color: postData.background_color
+          }
+        );
+        
         // Update posts state
         setPosts(posts.map(post => post.id === updatedPost.id ? updatedPost : post));
       } else {
         // Create new post
-        // Make sure to use the actual board ID from the board object, not the URL parameter
         const createPostRequest = {
           ...postData,
-          boardId: actualBoardId // Override with actual board ID
+          boardId: actualBoardId
         };
 
         let newPost;
-
-        // Use the appropriate endpoint based on authentication
         if (isAuthenticated) {
           newPost = await postApi.createPost(createPostRequest);
         } else {
@@ -192,65 +204,13 @@ const BoardPage: React.FC = () => {
     }
   };
 
-  const handleReorderPosts = async (postOrders: { id: string, positionOrder: number }[]) => {
-    if (!board) return;
-
-    try {
-      // Check if reorderPosts is available in the API
-      if (typeof postApi.reorderPosts !== 'function') {
-        console.error('reorderPosts function is not available in postApi');
-        alert('Post reordering is not available at this time');
-        return;
-      }
-
-      await postApi.reorderPosts(board.id, postOrders);
-
-      // Update the local state with new order
-      const reorderedPosts = [...posts];
-      reorderedPosts.sort((a, b) => {
-        const aIndex = postOrders.findIndex(order => order.id === a.id);
-        const bIndex = postOrders.findIndex(order => order.id === b.id);
-        return aIndex - bIndex;
-      });
-
-      setPosts(reorderedPosts);
-    } catch (err) {
-      console.error('Error reordering posts:', err);
-      alert('Failed to reorder posts. Please try again.');
-    }
-  };
-
   const handleShareBoard = () => {
     setShareDialogOpen(true);
   };
 
-  const handleEditBoard = () => {
-    // For simplicity we're not implementing this in the demo
-    alert('Edit board functionality will be implemented in a future update');
-  };
-
-  const handleToggleBoardPrivacy = async () => {
-    if (!board) return;
-
-    try {
-      const updatedBoard = await boardApi.updateBoard(board.id, {
-        isPublic: !board.isPrivate
-      });
-
-      setBoard(updatedBoard);
-    } catch (err) {
-      console.error('Error updating board privacy:', err);
-      alert('Failed to update board privacy settings. Please try again.');
-    }
-  };
-
-  const confirmDeleteBoard = () => {
-    setDeleteDialogOpen(true);
-  };
-
   const handleDeleteBoard = async () => {
     try {
-      await boardApi.deleteBoard(boardId!);
+      await boardApi.deleteBoard(board?.id || '');
       setDeleteDialogOpen(false);
       navigate('/');
     } catch (err) {
@@ -300,27 +260,119 @@ const BoardPage: React.FC = () => {
   }
 
   return (
-    <Box>
+    <Box sx={{ 
+      minHeight: '100vh',
+      backgroundColor: '#f5f7fa'
+    }}>
       {/* Board Header */}
-      <BoardHeader
-        board={board}
-        isOwner={isOwner}
-        onShare={handleShareBoard}
-        onEdit={handleEditBoard}
-        onDelete={confirmDeleteBoard}
-        onTogglePrivacy={handleToggleBoardPrivacy}
-      />
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          py: 3, 
+          px: 4,
+          mb: 4, 
+          borderRadius: 0,
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          backgroundColor: 'white'
+        }}
+      >
+        <Container maxWidth="lg">
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
+              {board.title}
+            </Typography>
+            {board.description && (
+              <Typography variant="body1" color="text.secondary">
+                {board.description}
+              </Typography>
+            )}
+          </Box>
+          
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between',
+            alignItems: 'center' 
+          }}>
+            <Typography variant="subtitle1">
+              {posts.length} {posts.length === 1 ? 'message' : 'messages'}
+            </Typography>
+            
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                variant="outlined"
+                startIcon={<ShareIcon />}
+                onClick={handleShareBoard}
+              >
+                Share
+              </Button>
+              
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<AddIcon />}
+                onClick={handleOpenCreatePost}
+              >
+                Add a Message
+              </Button>
+            </Box>
+          </Box>
+        </Container>
+      </Paper>
 
-      {/* Board Grid with Posts */}
-      <BoardGrid
-        posts={posts}
-        isLoading={isLoading}
-        error={error}
-        isOwner={isOwner}
-        onAddPost={handleOpenCreatePost}
-        onEditPost={handleEditPost}
-        onDeletePost={handleDeletePost}
-      />
+      {/* Board Content */}
+      <Container maxWidth="lg" sx={{ mb: 6 }}>
+        {posts.length === 0 ? (
+          <Paper
+            elevation={0}
+            sx={{
+              py: 10,
+              px: 4,
+              textAlign: 'center',
+              borderRadius: 2,
+              backgroundColor: 'white',
+              border: '1px dashed',
+              borderColor: 'divider',
+            }}
+          >
+            <Typography variant="h6" gutterBottom>
+              No messages yet
+            </Typography>
+            <Typography variant="body1" color="text.secondary" paragraph>
+              Be the first to add a message to this board!
+            </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<AddIcon />}
+              onClick={handleOpenCreatePost}
+              sx={{ mt: 2 }}
+            >
+              Add a Message
+            </Button>
+          </Paper>
+        ) : (
+          <Box sx={{ 
+            display: 'grid', 
+            gridTemplateColumns: {
+              xs: '1fr',            // 1 column on mobile
+              sm: 'repeat(2, 1fr)', // 2 columns on tablet
+              md: 'repeat(3, 1fr)'  // 3 columns on desktop
+            },
+            gap: 3
+          }}>
+            {posts.map((post) => (
+              <KudoPost
+                key={post.id}
+                post={post}
+                isOwner={canModifyPost(post)}
+                onEdit={handleEditPost}
+                onDelete={handleDeletePost}
+              />
+            ))}
+          </Box>
+        )}
+      </Container>
 
       {/* Create/Edit Post Dialog */}
       <CreatePostForm

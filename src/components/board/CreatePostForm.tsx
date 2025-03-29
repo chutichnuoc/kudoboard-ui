@@ -11,6 +11,7 @@ import {
   Typography,
   CircularProgress,
   Alert,
+  Avatar
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ImageIcon from '@mui/icons-material/Image';
@@ -26,6 +27,18 @@ interface CreatePostFormProps {
   error: string | null;
 }
 
+// Color options for post backgrounds
+const colorOptions = [
+  '#ffffff', // white
+  '#f8f9fa', // light gray
+  '#ffebee', // light red
+  '#e8f5e9', // light green
+  '#e3f2fd', // light blue
+  '#fff8e1', // light yellow
+  '#f3e5f5', // light purple
+  '#fce4ec', // light pink
+];
+
 const CreatePostForm: React.FC<CreatePostFormProps> = ({
   open,
   onClose,
@@ -35,9 +48,7 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({
   isSubmitting,
   error,
 }) => {
-  // Ensure boardId is being used correctly
-  console.log('CreatePostForm received boardId:', boardId);
-  
+  // Form state
   const [formData, setFormData] = useState<CreatePostRequest>({
     boardId: boardId,
     author: '',
@@ -50,7 +61,7 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({
   useEffect(() => {
     if (editPost) {
       setFormData({
-        boardId: boardId, // This should be the numeric ID, not the slug
+        boardId: boardId,
         author: editPost.author,
         message: editPost.message,
         imageUrl: editPost.imageUrl || '',
@@ -59,26 +70,14 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({
     } else {
       // Reset form when not editing
       setFormData({
-        boardId: boardId, // This should be the numeric ID, not the slug
+        boardId: boardId,
         author: '',
         message: '',
         imageUrl: '',
         background_color: '#ffffff',
       });
     }
-  }, [editPost, boardId]);
-
-  // Color options for post background
-  const colorOptions = [
-    '#ffffff', // white
-    '#f8f9fa', // light gray
-    '#ffebee', // light red
-    '#e8f5e9', // light green
-    '#e3f2fd', // light blue
-    '#fff8e1', // light yellow
-    '#f3e5f5', // light purple
-    '#fce4ec', // light pink
-  ];
+  }, [editPost, boardId, open]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -104,126 +103,194 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="sm"
+      maxWidth="md"
       fullWidth
-      aria-labelledby="create-post-dialog-title"
+      PaperProps={{
+        sx: { borderRadius: 2 }
+      }}
     >
-      <DialogTitle id="create-post-dialog-title">
-        {editPost ? 'Edit Message' : 'Add a Message'}
+      <DialogTitle 
+        sx={{ 
+          px: 3, 
+          py: 2,
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}
+      >
+        <Typography variant="h6" fontWeight="medium">
+          {editPost ? 'Edit Message' : 'Add a Message'}
+        </Typography>
         <IconButton
           aria-label="close"
           onClick={onClose}
-          sx={{ position: 'absolute', right: 8, top: 8 }}
+          size="small"
         >
           <CloseIcon />
         </IconButton>
       </DialogTitle>
 
       <form onSubmit={handleSubmit}>
-        <DialogContent dividers>
+        <DialogContent sx={{ px: 3, py: 3 }}>
           {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert severity="error" sx={{ mb: 3 }}>
               {error}
             </Alert>
           )}
 
-          <TextField
-            autoFocus
-            margin="dense"
-            id="author"
-            name="author"
-            label="Your Name"
-            type="text"
-            fullWidth
-            variant="outlined"
-            value={formData.author}
-            onChange={handleChange}
-            required
-            sx={{ mb: 2 }}
-          />
-
-          <TextField
-            margin="dense"
-            id="message"
-            name="message"
-            label="Your Message"
-            multiline
-            rows={4}
-            fullWidth
-            variant="outlined"
-            value={formData.message}
-            onChange={handleChange}
-            required
-            sx={{ mb: 2 }}
-          />
-
-          <TextField
-            margin="dense"
-            id="imageUrl"
-            name="imageUrl"
-            label="Image URL (optional)"
-            type="url"
-            fullWidth
-            variant="outlined"
-            value={formData.imageUrl}
-            onChange={handleChange}
-            InputProps={{
-              startAdornment: (
-                <ImageIcon color="action" sx={{ mr: 1 }} />
-              ),
-            }}
-            sx={{ mb: 3 }}
-          />
-
-          <Typography variant="subtitle2" gutterBottom>
-            Post Color:
-          </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-            {colorOptions.map(color => (
-              <Box
-                key={color}
-                onClick={() => handleColorChange(color)}
-                sx={{
-                  width: 36,
-                  height: 36,
-                  bgcolor: color,
-                  border: '2px solid',
-                  borderColor: formData.background_color === color ? 'primary.main' : 'divider',
-                  borderRadius: '50%',
-                  cursor: 'pointer',
-                  '&:hover': {
-                    opacity: 0.9,
-                  },
-                }}
+          <Box sx={{ 
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: '7fr 5fr' },
+            gap: 3
+          }}>
+            {/* Left column - Form fields */}
+            <Box>
+              <TextField
+                autoFocus
+                margin="dense"
+                id="author"
+                name="author"
+                label="Your Name"
+                type="text"
+                fullWidth
+                variant="outlined"
+                value={formData.author}
+                onChange={handleChange}
+                required
+                disabled={editPost !== undefined}
+                sx={{ mb: 3 }}
               />
-            ))}
-          </Box>
 
-          {formData.imageUrl && (
-            <Box sx={{ mt: 2, textAlign: 'center' }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Image Preview:
-              </Typography>
-              <Box
-                component="img"
-                src={formData.imageUrl}
-                alt="Preview"
-                sx={{
-                  maxWidth: '100%',
-                  maxHeight: 200,
-                  objectFit: 'contain',
-                  borderRadius: 1,
-                }}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
+              <TextField
+                margin="dense"
+                id="message"
+                name="message"
+                label="Your Message"
+                multiline
+                rows={10}
+                fullWidth
+                variant="outlined"
+                value={formData.message}
+                onChange={handleChange}
+                required
+                sx={{ mb: 3 }}
+              />
+
+              <TextField
+                margin="dense"
+                id="imageUrl"
+                name="imageUrl"
+                label="Image URL (optional)"
+                type="url"
+                fullWidth
+                variant="outlined"
+                value={formData.imageUrl}
+                onChange={handleChange}
+                InputProps={{
+                  startAdornment: (
+                    <ImageIcon color="action" sx={{ mr: 1 }} />
+                  ),
                 }}
               />
             </Box>
-          )}
+
+            {/* Right column - Color picker and preview */}
+            <Box>
+              <Typography variant="subtitle2" gutterBottom fontWeight="medium">
+                Card Color:
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 3 }}>
+                {colorOptions.map(color => (
+                  <Box
+                    key={color}
+                    onClick={() => handleColorChange(color)}
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      bgcolor: color,
+                      border: '2px solid',
+                      borderColor: formData.background_color === color ? 'primary.main' : 'divider',
+                      borderRadius: '50%',
+                      cursor: 'pointer',
+                      '&:hover': {
+                        opacity: 0.9,
+                        transform: 'scale(1.05)',
+                      },
+                    }}
+                  />
+                ))}
+              </Box>
+
+              <Typography variant="subtitle2" gutterBottom fontWeight="medium">
+                Preview:
+              </Typography>
+              <Box
+                sx={{
+                  p: 3,
+                  bgcolor: formData.background_color,
+                  borderRadius: 2,
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+                  height: '300px',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                {formData.imageUrl && (
+                  <Box
+                    component="img"
+                    src={formData.imageUrl}
+                    alt="Preview"
+                    sx={{
+                      width: '100%',
+                      height: 120,
+                      objectFit: 'cover',
+                      borderRadius: 1,
+                      mb: 2,
+                    }}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                )}
+                <Typography
+                  variant="body1"
+                  sx={{
+                    mb: 'auto',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    flexGrow: 1,
+                  }}
+                >
+                  {formData.message || 'Your message will appear here...'}
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
+                  <Avatar sx={{ 
+                    width: 32, 
+                    height: 32, 
+                    bgcolor: 'primary.main', 
+                    mr: 1,
+                    fontSize: '0.75rem',
+                  }}>
+                    {formData.author ? formData.author.charAt(0).toUpperCase() : '?'}
+                  </Avatar>
+                  <Typography variant="subtitle2">
+                    {formData.author || 'Your Name'}
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+          </Box>
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, py: 2 }}>
-          <Button onClick={onClose} color="inherit" disabled={isSubmitting}>
+        <DialogActions sx={{ p: 3, borderTop: '1px solid', borderColor: 'divider' }}>
+          <Button 
+            onClick={onClose} 
+            variant="outlined"
+            disabled={isSubmitting}
+          >
             Cancel
           </Button>
           <Button
@@ -231,9 +298,9 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({
             variant="contained"
             color="primary"
             disabled={!isValid || isSubmitting}
-            startIcon={isSubmitting ? <CircularProgress size={24} /> : null}
+            startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
           >
-            {editPost ? 'Update' : 'Add'} Message
+            {editPost ? 'Update' : 'Post'} Message
           </Button>
         </DialogActions>
       </form>

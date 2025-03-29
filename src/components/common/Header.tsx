@@ -42,9 +42,6 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated, currentUser, logout } = useAuth();
 
-  // Debug log
-  console.log('Auth state:', { isAuthenticated, currentUser });
-
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
