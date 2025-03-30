@@ -39,8 +39,8 @@ const CreateBoardPage: React.FC = () => {
   const [formData, setFormData] = useState<CreateBoardRequest>({
     title: '',
     description: '',
-    coverImage: '',
-    isPublic: true,
+    cover_image: '',
+    is_public: true,
   });
   
   // UI state
@@ -64,7 +64,7 @@ const CreateBoardPage: React.FC = () => {
       ...prev,
       title: template.title,
       description: template.description,
-      coverImage: template.coverImage,
+      cover_image: template.coverImage,
     }));
   };
 
@@ -153,7 +153,7 @@ const CreateBoardPage: React.FC = () => {
                   label="Cover Image URL (optional)"
                   variant="outlined"
                   fullWidth
-                  value={formData.coverImage}
+                  value={formData.cover_image}
                   onChange={handleChange}
                   InputProps={{
                     startAdornment: (
@@ -164,14 +164,14 @@ const CreateBoardPage: React.FC = () => {
                   sx={{ mb: 3 }}
                 />
 
-                {formData.coverImage && (
+                {formData.cover_image && (
                   <Box sx={{ mb: 3, textAlign: 'center' }}>
                     <Typography variant="subtitle2" gutterBottom>
                       Cover Image Preview:
                     </Typography>
                     <Box
                       component="img"
-                      src={formData.coverImage}
+                      src={formData.cover_image}
                       alt="Cover Preview"
                       sx={{
                         width: '100%',
@@ -190,7 +190,7 @@ const CreateBoardPage: React.FC = () => {
                   control={
                     <Switch
                       name="isPublic"
-                      checked={formData.isPublic}
+                      checked={formData.is_public}
                       onChange={handleChange}
                       color="primary"
                     />

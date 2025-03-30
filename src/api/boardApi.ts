@@ -39,10 +39,10 @@ export const boardApi = {
         const formattedData = {
             title: boardData.title,
             description: boardData.description || '',
-            backgroundImageURL: boardData.coverImage || '',
-            isPrivate: !boardData.isPublic,
+            backgroundImageURL: boardData.cover_image || '',
+            isPrivate: !boardData.is_public,
             allowAnonymous: true,
-            backgroundType: boardData.coverImage ? 'image' : 'color',
+            backgroundType: boardData.cover_image ? 'image' : 'color',
             backgroundcolor: '#ffffff'
         };
         
@@ -56,11 +56,11 @@ export const boardApi = {
         
         if (boardData.title !== undefined) formattedData.title = boardData.title;
         if (boardData.description !== undefined) formattedData.description = boardData.description;
-        if (boardData.coverImage !== undefined) {
-            formattedData.backgroundImageURL = boardData.coverImage;
+        if (boardData.cover_image !== undefined) {
+            formattedData.backgroundImageURL = boardData.cover_image;
             formattedData.backgroundType = 'image';
         }
-        if (boardData.isPublic !== undefined) formattedData.isPrivate = !boardData.isPublic;
+        if (boardData.is_public !== undefined) formattedData.isPrivate = !boardData.is_public;
         
         const response = await apiClient.put(`/boards/${id}`, formattedData);
         return response.data;

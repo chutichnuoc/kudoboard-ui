@@ -90,7 +90,7 @@ const HomePage: React.FC = () => {
                         {board.description || 'No description'}
                       </Typography>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-                        Created: {new Date(board.createdAt).toLocaleDateString()}
+                        Created: {new Date(board.created_at).toLocaleDateString()}
                       </Typography>
                     </Box>
                   </Box>

@@ -10,11 +10,13 @@ import {
   MenuItem, 
   Avatar,
   CardMedia,
-  Divider
+  Divider,
+  Tooltip
 } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import { Post } from '../../types/postTypes';
 
 interface KudoPostProps {
@@ -27,8 +29,12 @@ interface KudoPostProps {
 const KudoPost: React.FC<KudoPostProps> = ({ post, onEdit, onDelete, isOwner }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
+  
+  // State to track if the card is being hovered
+  const [isHovered, setIsHovered] = useState(false);
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+    event.stopPropagation(); // Prevent drag from starting when clicking menu
     setAnchorEl(event.currentTarget);
   };
 
@@ -66,16 +72,42 @@ const KudoPost: React.FC<KudoPostProps> = ({ post, onEdit, onDelete, isOwner }) 
         boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
         overflow: 'hidden',
         transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+        position: 'relative', // Important for positioning the drag handle
         '&:hover': {
-          transform: 'translateY(-5px)',
           boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
         },
       }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      {post.imageUrl && (
+      {/* Drag Handle - Only visible on hover and when user is owner */}
+      {isOwner && isHovered && (
+        <Tooltip title="Drag to reorder">
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              backgroundColor: 'rgba(0,0,0,0.1)',
+              borderRadius: '0 0 8px 0',
+              zIndex: 2,
+              cursor: 'grab',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 30,
+              height: 30,
+            }}
+          >
+            <DragIndicatorIcon fontSize="small" />
+          </Box>
+        </Tooltip>
+      )}
+
+      {post.image_url && (
         <CardMedia
           component="img"
-          image={post.imageUrl}
+          image={post.image_url}
           alt="Post image"
           sx={{
             maxHeight: 180,
@@ -119,13 +151,13 @@ const KudoPost: React.FC<KudoPostProps> = ({ post, onEdit, onDelete, isOwner }) 
                 {post.author}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                {new Date(post.createdAt).toLocaleDateString()}
+                {new Date(post.created_at).toLocaleDateString()}
               </Typography>
             </Box>
           </Box>
 
           {isOwner && (
-            <Box>
+            <Box onClick={(e) => e.stopPropagation()}>
               <IconButton
                 aria-label="post-options"
                 size="small"
@@ -143,6 +175,7 @@ const KudoPost: React.FC<KudoPostProps> = ({ post, onEdit, onDelete, isOwner }) 
                 onClose={handleClose}
                 transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                 anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                onClick={(e) => e.stopPropagation()}
               >
                 <MenuItem onClick={handleEdit}>
                   <EditIcon fontSize="small" sx={{ mr: 1 }} />

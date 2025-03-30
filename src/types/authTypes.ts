@@ -2,10 +2,10 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  profilePicture?: string;
-  isVerified: boolean;
-  authProvider: string;
-  createdAt: string;
+  profile_picture?: string;
+  is_verified: boolean;
+  auth_provider: string;
+  created_at: string;
 }
 
 export interface AuthResponse {

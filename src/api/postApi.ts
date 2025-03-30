@@ -70,16 +70,25 @@ export const postApi = {
         return response.data?.likes_count || 0;
     },
 
-    // Add this to postApi.ts:
     reorderPosts: async (boardId: string, postOrders: { id: string, positionOrder: number }[]): Promise<void> => {
+        // Convert the post orders to the format expected by the backend
+        // The backend expects IDs as integers, so we need to parse them
         const formattedData = {
             post_orders: postOrders.map(order => ({
-                id: parseInt(order.id),
+                id: parseInt(order.id), // Convert to number if backend expects a number
                 position_order: order.positionOrder
             }))
         };
 
-        await apiClient.put(`/boards/${boardId}/posts/reorder`, formattedData);
+        console.log('Sending reorder request:', { boardId, formattedData });
+
+        try {
+            // Make the API call
+            await apiClient.put(`/boards/${boardId}/posts/reorder`, formattedData);
+        } catch (error) {
+            console.error('Error reordering posts:', error);
+            throw error;
+        }
     }
 };
 
@@ -90,12 +99,12 @@ function transformResponseToPost(data: any): Post {
         // Return a default post with empty values
         return {
             id: '0',
-            boardId: '0',
+            board_id: '0',
             author: 'Unknown',
             message: '',
             background_color: '#ffffff',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
         };
     }
 
@@ -106,12 +115,12 @@ function transformResponseToPost(data: any): Post {
 
     return {
         id: safeToString(data.id),
-        boardId: safeToString(data.boardID || data.boardId),
+        board_id: safeToString(data.boardID || data.boardId),
         author: data.authorName || 'Unknown',
         message: data.content || '',
         background_color: data.backgroundColor || '#ffffff',
-        imageUrl: data.media?.length > 0 ? data.media[0].sourceURL : undefined,
-        createdAt: data.createdAt || new Date().toISOString(),
-        updatedAt: data.updatedAt || new Date().toISOString()
+        image_url: data.media?.length > 0 ? data.media[0].sourceURL : undefined,
+        created_at: data.createdAt || new Date().toISOString(),
+        updated_at: data.updatedAt || new Date().toISOString()
     };
 }

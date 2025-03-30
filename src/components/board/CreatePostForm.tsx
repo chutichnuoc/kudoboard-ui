@@ -53,7 +53,7 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({
     boardId: boardId,
     author: '',
     message: '',
-    imageUrl: '',
+    image_url: '',
     background_color: '#ffffff',
   });
 
@@ -64,7 +64,7 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({
         boardId: boardId,
         author: editPost.author,
         message: editPost.message,
-        imageUrl: editPost.imageUrl || '',
+        image_url: editPost.image_url || '',
         background_color: editPost.background_color || '#ffffff',
       });
     } else {
@@ -73,7 +73,7 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({
         boardId: boardId,
         author: '',
         message: '',
-        imageUrl: '',
+        image_url: '',
         background_color: '#ffffff',
       });
     }
@@ -186,7 +186,7 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({
                 type="url"
                 fullWidth
                 variant="outlined"
-                value={formData.imageUrl}
+                value={formData.image_url}
                 onChange={handleChange}
                 InputProps={{
                   startAdornment: (
@@ -238,10 +238,10 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({
                   flexDirection: 'column',
                 }}
               >
-                {formData.imageUrl && (
+                {formData.image_url && (
                   <Box
                     component="img"
-                    src={formData.imageUrl}
+                    src={formData.image_url}
                     alt="Preview"
                     sx={{
                       width: '100%',

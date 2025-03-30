@@ -102,14 +102,14 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
             )}
             <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
               <Chip 
-                icon={!board.isPrivate ? <LockOpenIcon fontSize="small" /> : <LockIcon fontSize="small" />}
-                label={!board.isPrivate ? 'Public' : 'Private'}
+                icon={!board.is_private ? <LockOpenIcon fontSize="small" /> : <LockIcon fontSize="small" />}
+                label={!board.is_private ? 'Public' : 'Private'}
                 size="small"
-                color={!board.isPrivate ? 'success' : 'default'}
+                color={!board.is_private ? 'success' : 'default'}
                 sx={{ mr: 1 }}
               />
               <Typography variant="caption" color="text.secondary">
-                Created {new Date(board.createdAt).toLocaleDateString()}
+                Created {new Date(board.created_at).toLocaleDateString()}
               </Typography>
             </Box>
           </Box>
@@ -147,7 +147,7 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
                     Edit Board
                   </MenuItem>
                   <MenuItem onClick={handleTogglePrivacy}>
-                    {!board.isPrivate ? (
+                    {!board.is_private ? (
                       <>
                         <LockIcon fontSize="small" sx={{ mr: 1 }} />
                         Make Private

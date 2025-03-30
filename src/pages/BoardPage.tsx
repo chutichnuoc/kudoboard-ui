@@ -1,4 +1,4 @@
-// src/pages/BoardPage.tsx
+// This is a partial update. Focus is on enhancing the BoardPage component to handle post reordering
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -13,11 +13,11 @@ import {
   CircularProgress, 
   Alert,
   Paper,
-  Divider,
+  Snackbar,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ShareIcon from '@mui/icons-material/Share';
-import KudoPost from '../components/board/KudoPost';
+import BoardGrid from '../components/board/BoardGrid';
 import CreatePostForm from '../components/board/CreatePostForm';
 import ShareBoardDialog from '../components/board/ShareBoardDialog';
 import { boardApi } from '../api/boardApi';
@@ -45,6 +45,11 @@ const BoardPage: React.FC = () => {
   const [editingPost, setEditingPost] = useState<Post | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  
+  // Snackbar state for notifications
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
 
   // Fetch board and posts
   useEffect(() => {
@@ -64,7 +69,7 @@ const BoardPage: React.FC = () => {
           setBoard(data.board);
 
           // Check if current user is the board owner
-          setIsOwner(isAuthenticated && currentUser?.id === data.board.creatorID);
+          setIsOwner(isAuthenticated && currentUser?.id === data.board.creator_id);
 
           // Transform backend posts to frontend format
           const mappedPosts: Post[] = data.posts.map((backendPost: any) => {
@@ -72,27 +77,33 @@ const BoardPage: React.FC = () => {
             let authorId = undefined;
             if (backendPost.author_id) {
               authorId = backendPost.author_id.toString();
-            } else if (backendPost.authorID) {
-              authorId = backendPost.authorID.toString();
-            } else if (backendPost.authorId) {
-              authorId = backendPost.authorId.toString();
             }
 
             return {
               id: backendPost.id ? backendPost.id.toString() : '0',
-              boardId: (backendPost.board_id || backendPost.boardID || backendPost.boardId || '0').toString(),
-              author: backendPost.author_name || backendPost.authorName || 'Unknown',
-              authorId: authorId,
+              board_id: (backendPost.board_id || '0').toString(),
+              author: backendPost.author_name || 'Unknown',
+              author_id: authorId,
               message: backendPost.content || '',
-              backgroundColor: backendPost.background_color || backendPost.backgroundColor || '#ffffff',
-              textColor: backendPost.text_color || backendPost.textColor || '#000000',
-              imageUrl: backendPost.media?.length > 0 ? backendPost.media[0].source_url || backendPost.media[0].sourceURL : undefined,
-              createdAt: backendPost.created_at || backendPost.createdAt || new Date().toISOString(),
-              updatedAt: backendPost.updated_at || backendPost.updatedAt || new Date().toISOString()
+              background_color: backendPost.background_color || '#ffffff',
+              text_color: backendPost.text_color || '#000000',
+              image_url: backendPost.media?.length > 0 ? backendPost.media[0].source_url : undefined,
+              created_at: backendPost.created_at || new Date().toISOString(),
+              updated_at: backendPost.updated_at || new Date().toISOString()
             };
           });
 
-          setPosts(mappedPosts);
+          // Sort posts by position_order (if available) or createdAt
+          const sortedPosts = mappedPosts.sort((a, b) => {
+            // If posts have position_order, use that for sorting
+            if ('position_order' in a && 'position_order' in b) {
+              return (a.position_order || 0) - (b.position_order || 0);
+            }
+            // Otherwise, sort by creation date (newest first)
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          });
+
+          setPosts(sortedPosts);
         } else {
           throw new Error('Board not found');
         }
@@ -107,17 +118,56 @@ const BoardPage: React.FC = () => {
     fetchBoardData();
   }, [boardId, isAuthenticated, currentUser]);
 
+  // Handler for post reordering
+  const handleReorderPosts = async (postOrders: { id: string, positionOrder: number }[]) => {
+    if (!board?.id) return;
+    
+    try {
+      await postApi.reorderPosts(board.id.toString(), postOrders);
+      
+      // Show success message
+      setSnackbarMessage('Posts reordered successfully');
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+      
+      // Update local state to reflect the new order
+      // This keeps the UI in sync with the backend without requiring a full reload
+      const reorderedPosts = [...posts];
+      postOrders.forEach(order => {
+        const postIndex = reorderedPosts.findIndex(p => p.id === order.id);
+        if (postIndex !== -1) {
+          reorderedPosts[postIndex] = {
+            ...reorderedPosts[postIndex],
+            position_order: order.positionOrder
+          };
+        }
+      });
+      
+      setPosts(reorderedPosts);
+    } catch (err) {
+      console.error('Error reordering posts:', err);
+      setSnackbarMessage('Failed to reorder posts. Please try again.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    }
+  };
+
+  // Handler for closing the snackbar
+  const handleCloseSnackbar = () => {
+    setSnackbarOpen(false);
+  };
+
   // Check if current user can modify a post
   const canModifyPost = (post: Post) => {
     if (!isAuthenticated || !currentUser) return false;
     
     // Board owners can modify all posts
-    if (board && currentUser.id === board.creatorID) return true;
+    if (board && currentUser.id === board.creator_id) return true;
     
     // Post authors can modify their own posts
-    if (!post.authorId) return false;
+    if (!post.author_id) return false;
     
-    return post.authorId === currentUser.id.toString();
+    return post.author_id === currentUser.id.toString();
   };
 
   // Handler functions
@@ -141,9 +191,16 @@ const BoardPage: React.FC = () => {
         
         // Update local state by removing the deleted post
         setPosts(posts.filter(p => p.id !== post.id));
+        
+        // Show success message
+        setSnackbarMessage('Post deleted successfully');
+        setSnackbarSeverity('success');
+        setSnackbarOpen(true);
       } catch (err) {
         console.error('Error deleting post:', err);
-        alert('Failed to delete the message. Please try again.');
+        setSnackbarMessage('Failed to delete the message. Please try again.');
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
       } finally {
         setIsLoading(false);
       }
@@ -176,6 +233,11 @@ const BoardPage: React.FC = () => {
         
         // Update posts state
         setPosts(posts.map(post => post.id === updatedPost.id ? updatedPost : post));
+        
+        // Show success message
+        setSnackbarMessage('Post updated successfully');
+        setSnackbarSeverity('success');
+        setSnackbarOpen(true);
       } else {
         // Create new post
         const createPostRequest = {
@@ -192,6 +254,11 @@ const BoardPage: React.FC = () => {
 
         // Add new post to state
         setPosts([...posts, newPost]);
+        
+        // Show success message
+        setSnackbarMessage('Post created successfully');
+        setSnackbarSeverity('success');
+        setSnackbarOpen(true);
       }
 
       // Close the dialog
@@ -212,10 +279,21 @@ const BoardPage: React.FC = () => {
     try {
       await boardApi.deleteBoard(board?.id || '');
       setDeleteDialogOpen(false);
-      navigate('/');
+      
+      // Show success message
+      setSnackbarMessage('Board deleted successfully');
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+      
+      // Navigate to home after a short delay
+      setTimeout(() => {
+        navigate('/');
+      }, 1500);
     } catch (err) {
       console.error('Error deleting board:', err);
-      alert('Failed to delete the board. Please try again.');
+      setSnackbarMessage('Failed to delete the board. Please try again.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
     }
   };
 
@@ -322,56 +400,16 @@ const BoardPage: React.FC = () => {
 
       {/* Board Content */}
       <Container maxWidth="lg" sx={{ mb: 6 }}>
-        {posts.length === 0 ? (
-          <Paper
-            elevation={0}
-            sx={{
-              py: 10,
-              px: 4,
-              textAlign: 'center',
-              borderRadius: 2,
-              backgroundColor: 'white',
-              border: '1px dashed',
-              borderColor: 'divider',
-            }}
-          >
-            <Typography variant="h6" gutterBottom>
-              No messages yet
-            </Typography>
-            <Typography variant="body1" color="text.secondary" paragraph>
-              Be the first to add a message to this board!
-            </Typography>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<AddIcon />}
-              onClick={handleOpenCreatePost}
-              sx={{ mt: 2 }}
-            >
-              Add a Message
-            </Button>
-          </Paper>
-        ) : (
-          <Box sx={{ 
-            display: 'grid', 
-            gridTemplateColumns: {
-              xs: '1fr',            // 1 column on mobile
-              sm: 'repeat(2, 1fr)', // 2 columns on tablet
-              md: 'repeat(3, 1fr)'  // 3 columns on desktop
-            },
-            gap: 3
-          }}>
-            {posts.map((post) => (
-              <KudoPost
-                key={post.id}
-                post={post}
-                isOwner={canModifyPost(post)}
-                onEdit={handleEditPost}
-                onDelete={handleDeletePost}
-              />
-            ))}
-          </Box>
-        )}
+        <BoardGrid
+          posts={posts}
+          isLoading={isLoading}
+          error={error}
+          isOwner={isOwner}
+          onAddPost={handleOpenCreatePost}
+          onEditPost={handleEditPost}
+          onDeletePost={handleDeletePost}
+          onReorderPosts={isOwner ? handleReorderPosts : undefined}
+        />
       </Container>
 
       {/* Create/Edit Post Dialog */}
@@ -411,6 +449,19 @@ const BoardPage: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={handleCloseSnackbar}
+        message={snackbarMessage}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

@@ -3,45 +3,45 @@ export interface Board {
     title: string;
     description: string;
     slug: string;
-    creatorID: number;
-    backgroundType: string;
-    backgroundImageURL: string;
-    backgroundcolor: string;
-    themeID?: number;
-    isPrivate: boolean;
-    allowAnonymous: boolean;
-    expiresAt?: string;
-    createdAt: string;
-    updatedAt: string;
+    creator_id: number;
+    background_type: string;
+    background_image_url: string;
+    background_color: string;
+    theme_id?: number;
+    is_private: boolean;
+    allow_anonymous: boolean;
+    expires_at?: string;
+    created_at: string;
+    updated_at: string;
     creator?: {
         id: number;
         name: string;
         email: string;
-        profilePicture?: string;
+        profile_picture?: string;
     };
-    postCount?: number;
+    post_count?: number;
 }
 
 export interface CreateBoardRequest {
     title: string;
     description?: string;
-    coverImage?: string;
-    isPublic?: boolean;
+    cover_image?: string;
+    is_public?: boolean;
 }
 
 export interface UpdateBoardRequest {
     title?: string;
     description?: string;
-    coverImage?: string;
-    isPublic?: boolean;
+    cover_image?: string;
+    is_public?: boolean;
 }
 
 export interface Theme {
     id: number;
     name: string;
     description: string;
-    backgroundColor: string;
-    backgroundImageURL: string;
-    additionalStyles: string;
-    isDefault: boolean;
+    background_color: string;
+    background_image_url: string;
+    additional_styles: string;
+    is_default: boolean;
 }

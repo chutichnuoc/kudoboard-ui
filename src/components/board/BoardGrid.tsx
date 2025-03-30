@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Box, Container, Typography, Button, Alert } from '@mui/material';
-import Masonry from 'react-masonry-css';
 import AddIcon from '@mui/icons-material/Add';
 import KudoPost from './KudoPost';
 import { Post } from '../../types/postTypes';
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 
 interface BoardGridProps {
   posts: Post[];
@@ -24,13 +24,43 @@ const BoardGrid: React.FC<BoardGridProps> = ({
   onAddPost,
   onEditPost,
   onDeletePost,
+  onReorderPosts,
 }) => {
-  // Breakpoints for the masonry grid
-  const breakpoints = {
-    default: 3, // 3 columns on desktop
-    1100: 3,
-    900: 2, // 2 columns on tablets
-    600: 1, // 1 column on mobile
+  // State to track posts (including their order)
+  const [orderedPosts, setOrderedPosts] = useState<Post[]>(posts);
+
+  // Update local state when posts prop changes
+  React.useEffect(() => {
+    setOrderedPosts(posts);
+  }, [posts]);
+
+  // Handle the end of a drag operation
+  const handleDragEnd = (result: DropResult) => {
+    const { destination, source } = result;
+
+    // If there's no destination or if the item was dropped back in its original position, do nothing
+    if (!destination || (destination.index === source.index)) {
+      return;
+    }
+
+    // Reorder the posts array
+    const newOrderedPosts = Array.from(orderedPosts);
+    const [movedPost] = newOrderedPosts.splice(source.index, 1);
+    newOrderedPosts.splice(destination.index, 0, movedPost);
+
+    // Update the local state
+    setOrderedPosts(newOrderedPosts);
+
+    // Generate the position order data for the API
+    const postOrders = newOrderedPosts.map((post, index) => ({
+      id: post.id,
+      positionOrder: index + 1
+    }));
+
+    // Call the onReorderPosts callback if it exists
+    if (onReorderPosts) {
+      onReorderPosts(postOrders);
+    }
   };
 
   if (isLoading) {
@@ -53,31 +83,32 @@ const BoardGrid: React.FC<BoardGridProps> = ({
     );
   }
 
-  return (
-    <Box sx={{ py: 4 }}>
-      <Container maxWidth="lg">
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            mb: 4,
-          }}
-        >
-          <Typography variant="h5" component="h2">
-            {posts.length} {posts.length === 1 ? 'Message' : 'Messages'}
-          </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AddIcon />}
-            onClick={onAddPost}
+  // If there are no posts, show the empty state
+  if (orderedPosts.length === 0) {
+    return (
+      <Box sx={{ py: 4 }}>
+        <Container maxWidth="lg">
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              mb: 4,
+            }}
           >
-            Add a Message
-          </Button>
-        </Box>
-
-        {posts.length === 0 ? (
+            <Typography variant="h5" component="h2">
+              0 Messages
+            </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<AddIcon />}
+              onClick={onAddPost}
+            >
+              Add a Message
+            </Button>
+          </Box>
+          
           <Box
             sx={{
               py: 8,
@@ -103,22 +134,110 @@ const BoardGrid: React.FC<BoardGridProps> = ({
               Add a Message
             </Button>
           </Box>
-        ) : (
-          <Masonry
-            breakpointCols={breakpoints}
-            className="masonry-grid"
-            columnClassName="masonry-grid-column"
+        </Container>
+      </Box>
+    );
+  }
+
+  // With drag-and-drop for non-empty boards
+  return (
+    <Box sx={{ py: 4 }}>
+      <Container maxWidth="lg">
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 4,
+          }}
+        >
+          <Typography variant="h5" component="h2">
+            {orderedPosts.length} {orderedPosts.length === 1 ? 'Message' : 'Messages'}
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+            onClick={onAddPost}
           >
-            {posts.map((post) => (
-              <KudoPost
-                key={post.id}
-                post={post}
-                isOwner={isOwner}
-                onEdit={onEditPost}
-                onDelete={onDeletePost}
-              />
+            Add a Message
+          </Button>
+        </Box>
+
+        {/* Only enable drag and drop if user is the owner */}
+        {isOwner ? (
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="board-posts" direction="vertical">
+              {(provided) => (
+                <Box
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                  sx={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: {
+                      xs: '1fr',
+                      sm: 'repeat(2, 1fr)',
+                      md: 'repeat(3, 1fr)'
+                    },
+                    gap: 3
+                  }}
+                >
+                  {orderedPosts.map((post, index) => (
+                    <Draggable 
+                      key={post.id} 
+                      draggableId={String(post.id)} 
+                      index={index}
+                    >
+                      {(provided, snapshot) => (
+                        <Box
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          sx={{
+                            transform: snapshot.isDragging ? 'scale(1.02)' : 'scale(1)',
+                            transition: 'transform 0.2s',
+                            height: '100%',
+                          }}
+                        >
+                          <KudoPost
+                            post={post}
+                            isOwner={isOwner}
+                            onEdit={onEditPost}
+                            onDelete={onDeletePost}
+                          />
+                        </Box>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </Box>
+              )}
+            </Droppable>
+          </DragDropContext>
+        ) : (
+          // For non-owners, just display the posts without drag functionality
+          <Box
+            sx={{ 
+              display: 'grid', 
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, 1fr)',
+                md: 'repeat(3, 1fr)'
+              },
+              gap: 3
+            }}
+          >
+            {orderedPosts.map((post) => (
+              <Box key={post.id}>
+                <KudoPost
+                  post={post}
+                  isOwner={isOwner}
+                  onEdit={onEditPost}
+                  onDelete={onDeletePost}
+                />
+              </Box>
             ))}
-          </Masonry>
+          </Box>
         )}
       </Container>
     </Box>

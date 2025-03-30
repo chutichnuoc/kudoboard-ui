@@ -1,22 +1,23 @@
 // src/types/postTypes.ts
 export interface Post {
   id: string;
-  boardId: string;
+  board_id: string;
   author: string;  // Maps to authorName in backend
-  authorId?: string; // Add this line - Maps to authorID in backend
+  author_id?: string; // Maps to authorID in backend
   message: string; // Maps to content in backend
-  imageUrl?: string;
+  image_url?: string;
   background_color?: string;
   text_color?: string;
-  createdAt: string;
-  updatedAt: string;
+  position_order?: number; // Added for drag and drop ordering
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CreatePostRequest {
   boardId: string;
   author: string;
   message: string;
-  imageUrl?: string;
+  image_url?: string;
   background_color?: string;
   text_color?: string;
 }
@@ -24,7 +25,7 @@ export interface CreatePostRequest {
 export interface UpdatePostRequest {
   author?: string;
   message?: string;
-  imageUrl?: string;
+  image_url?: string;
   background_color?: string;
   text_color?: string;
 }
@@ -32,11 +33,11 @@ export interface UpdatePostRequest {
 // This interface represents the Media type from the backend
 export interface Media {
   id: number;
-  postId: number;
+  post_id: number;
   type: string;
-  sourceType: string;
-  sourceURL: string;
-  externalId?: string;
-  thumbnailURL?: string;
-  createdAt: string;
+  source_type: string;
+  source_url: string;
+  external_id?: string;
+  thumbnail_url?: string;
+  created_at: string;
 }
